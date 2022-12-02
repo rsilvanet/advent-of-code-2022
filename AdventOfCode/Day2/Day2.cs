@@ -1,4 +1,4 @@
-﻿namespace AdventOfCode.Day1 {
+﻿namespace AdventOfCode.Day2 {
     public static class Day2 {
         public static void Go() {
             var input = File.ReadLines("Day2/Input.txt");
@@ -75,61 +75,36 @@
     }
 
     public static class EnumExtensions {
+        public static Hand ToHand(this string hand) => hand switch {
+            "A" => Hand.Rock,
+            "X" => Hand.Rock,
+            "B" => Hand.Paper,
+            "Y" => Hand.Paper,
+            "C" => Hand.Scissors,
+            "Z" => Hand.Scissors,
+            _ => throw new NotImplementedException($"Invalid hand {hand}.")
+        };
 
-        public static Hand ToHand(this string hand) {
-            switch (hand) {
-                case "A":
-                case "X":
-                    return Hand.Rock;
-                case "B":
-                case "Y":
-                    return Hand.Paper;
-                case "C":
-                case "Z":
-                    return Hand.Scissors;
-                default:
-                    throw new NotImplementedException($"Invalid hand {hand}.");
-            }
-        }
+        public static Result ToResult(this string result) => result switch {
+            "X" => Result.Loss,
+            "Y" => Result.Draw,
+            "Z" => Result.Win,
+            _ => throw new NotImplementedException($"Invalid result {result}.")
+        };
 
-        public static Result ToResult(this string result) {
-            switch (result) {
-                case "X":
-                    return Result.Loss;
-                case "Y":
-                    return Result.Draw;
-                case "Z":
-                    return Result.Win;
-                default:
-                    throw new NotImplementedException($"Invalid result {result}.");
-            }
-        }
+        public static Hand GetWinningHand(this Hand opponentHand) => opponentHand switch {
+            Hand.Rock => Hand.Paper,
+            Hand.Paper => Hand.Scissors,
+            Hand.Scissors => Hand.Rock,
+            _ => throw new NotImplementedException($"Invalid hand to win from: {opponentHand}")
+        };
 
-        public static Hand GetWinningHand(this Hand opponentHand) {
-            switch (opponentHand) {
-                case Hand.Rock:
-                    return Hand.Paper;
-                case Hand.Paper:
-                    return Hand.Scissors;
-                case Hand.Scissors:
-                    return Hand.Rock;
-                default:
-                    throw new NotImplementedException($"Invalid hand to win from: {opponentHand}");
-            }
-        }
-
-        public static Hand GetLosingHand(this Hand opponentHand) {
-            switch (opponentHand) {
-                case Hand.Rock:
-                    return Hand.Scissors;
-                case Hand.Paper:
-                    return Hand.Rock;
-                case Hand.Scissors:
-                    return Hand.Paper;
-                default:
-                    throw new NotImplementedException($"Invalid hand to lose from: {opponentHand}");
-            }
-        }
+        public static Hand GetLosingHand(this Hand opponentHand) => opponentHand switch {
+            Hand.Rock => Hand.Scissors,
+            Hand.Paper => Hand.Rock,
+            Hand.Scissors => Hand.Paper,
+            _ => throw new NotImplementedException($"Invalid hand to lose from: {opponentHand}")
+        };
 
         public static Hand GetDrawingHand(this Hand opponentHand) => opponentHand;
     }
