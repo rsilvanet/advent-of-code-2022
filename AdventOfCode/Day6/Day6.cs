@@ -8,8 +8,8 @@
         }
 
         private static int GetMarkerPosition(string input, int distinctAmount) {
-            for (int i = distinctAmount - 1; i < input.Length; i++) {
-                if (input.Skip(i - distinctAmount).Take(distinctAmount).Distinct().Count() == distinctAmount) {
+            for (int i = distinctAmount; i < input.Length; i++) {
+                if (input[(i - distinctAmount)..i].Distinct().Count() == distinctAmount) {
                     return i;
                 }
             }
