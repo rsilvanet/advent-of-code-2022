@@ -1,14 +1,17 @@
-﻿namespace AdventOfCode.Day8 {
+﻿using System.Diagnostics;
+using System;
+
+namespace AdventOfCode.Day8 {
     public static class Day8 {
         public static void Go() {
             var input = File.ReadLines("Day8/Input.txt");
-            var forest = new List<Tree>();
+            var forest = Array.Empty<Tree>();
 
             for (int x = 0; x < input.Count(); x++) {
                 var row = input.ElementAt(x);
                 for (int y = 0; y < row.Count(); y++) {
                     var height = (int)char.GetNumericValue(row.ElementAt(y));
-                    forest.Add(new Tree(x, y, height));
+                    forest = forest.Append(new Tree(x, y, height)).ToArray();
                 }
             }
 
@@ -27,40 +30,41 @@
         public int X { get; }
         public int Y { get; }
         public int Height { get; }
-        public bool IsOnEdge(List<Tree> forest) => X == 0 || Y == 0
+
+        public bool IsOnEdge(IEnumerable<Tree> forest) => X == 0 || Y == 0
             || X == forest.Max(t => t.X)
             || Y == forest.Max(t => t.Y);
 
-        public bool IsVisible(List<Tree> forest) => IsOnEdge(forest)
+        public bool IsVisible(IEnumerable<Tree> forest) => IsOnEdge(forest)
             || LookUp(forest).All(t => t.Height < Height)
             || LookDown(forest).All(t => t.Height < Height)
             || LookLeft(forest).All(t => t.Height < Height)
             || LookRight(forest).All(t => t.Height < Height);
 
-        public int GetScore(List<Tree> forest) => LookUp(forest).StopWhen(t => t.Height < Height).Count() 
-            * LookDown(forest).StopWhen(t => t.Height < Height).Count() 
-            * LookLeft(forest).StopWhen(t => t.Height < Height).Count() 
+        public int GetScore(IEnumerable<Tree> forest) => LookUp(forest).StopWhen(t => t.Height < Height).Count()
+            * LookDown(forest).StopWhen(t => t.Height < Height).Count()
+            * LookLeft(forest).StopWhen(t => t.Height < Height).Count()
             * LookRight(forest).StopWhen(t => t.Height < Height).Count();
 
-        private IEnumerable<Tree> LookUp(List<Tree> forest) => forest
+        private IEnumerable<Tree> LookUp(IEnumerable<Tree> forest) => forest
             .Where(t => t.Y == Y && t.X < X)
             .OrderByDescending(t => t.X);
 
-        private IEnumerable<Tree> LookDown(List<Tree> forest) => forest
+        private IEnumerable<Tree> LookDown(IEnumerable<Tree> forest) => forest
             .Where(t => t.Y == Y && t.X > X)
             .OrderBy(t => t.X);
 
-        private IEnumerable<Tree> LookLeft(List<Tree> forest) => forest
+        private IEnumerable<Tree> LookLeft(IEnumerable<Tree> forest) => forest
             .Where(t => t.X == X && t.Y < Y)
             .OrderByDescending(t => t.Y);
 
-        private IEnumerable<Tree> LookRight(List<Tree> forest) => forest
+        private IEnumerable<Tree> LookRight(IEnumerable<Tree> forest) => forest
             .Where(t => t.X == X && t.Y > Y)
             .OrderBy(t => t.Y);
     }
 
-    public static class ListExtensions {
-        public static Tree GetTree(this List<Tree> forest, (int x, int y) position) {
+    public static class EnumerableExtensions {
+        public static Tree GetTree(this IEnumerable<Tree> forest, (int x, int y) position) {
             return forest.Single(t => t.X == position.x && t.Y == position.y);
         }
 
