@@ -1,6 +1,4 @@
-﻿using System.Linq;
-
-namespace AdventOfCode.Day10 {
+﻿namespace AdventOfCode.Day10 {
     public static class Day10 {
         public static void Go() {
             var input = File.ReadLines("Day10/Input.txt");
