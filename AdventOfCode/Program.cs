@@ -1,4 +1,5 @@
 ﻿using AdventOfCode.Day1;
+using AdventOfCode.Day10;
 using AdventOfCode.Day2;
 using AdventOfCode.Day3;
 using AdventOfCode.Day4;
@@ -17,5 +18,6 @@ Day6.Go();
 Day7.Go();
 Day8.Go();
 Day9.Go();
+Day10.Go();
 
 Console.Read();
