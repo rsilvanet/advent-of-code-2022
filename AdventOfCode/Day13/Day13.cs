@@ -2,6 +2,8 @@
 
 namespace AdventOfCode.Day13 {
     public static class Day13 {
+        private static readonly CustomComparer Comparer = new CustomComparer();
+
         public static void Go() {
             var input = File.ReadLines("Day13/Input.txt");
             var index = 1;
@@ -21,13 +23,13 @@ namespace AdventOfCode.Day13 {
                 .Append("[[6]]")
                 .ToList();
 
-            sorted.Sort(new CustomComparer());
+            sorted.Sort(Comparer);
 
             Console.WriteLine("Day 13, Star 1: {0}", counter);
             Console.WriteLine("Day 13, Star 2: {0}", sorted.IndexOf("[[2]]") * sorted.IndexOf("[[6]]"));
         }
 
-        public static bool IsPairInOrder(string left, string right) => new CustomComparer().Compare(left, right) == -1;
+        public static bool IsPairInOrder(string left, string right) => Comparer.Compare(left, right) == -1;
     }
 
     public class CustomComparer : IComparer<string> {
