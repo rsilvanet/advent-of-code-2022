@@ -2,12 +2,24 @@
     public static class Day17 {
         public static void Go() {
             var input = File.ReadAllText("Day17/Input.txt");
-            var jets = new CircularList<char>(input.ToCharArray());
-            var rocks = Enumerable.Empty<Rock>();
 
-            while (rocks.Count() < 2022) {
-                var rock = GenerateNewRock(rocks);
-                
+            Console.WriteLine("Day 17, Star 1: {0}", GetTowerHeight(input, 2022) + 1);
+            Console.WriteLine("Day 17, Star 2: {0}", GetTowerHeight(input, 1_000_000_000_000) + 1);
+        }
+
+        private static long GetTowerHeight(string input, long numberOfRocksToDrop) {
+            var jets = new CircularList<char>(input.ToCharArray());
+            var rocks = new List<Rock>();
+            var lastRock = default(Rock);
+            var highestRow = -1L;
+            var rockCount = 0L;
+            var snapshot = string.Empty;
+            var snapshotHighestRow = 0L;
+            var snapshotRockCount = 0L;
+
+            while (rockCount < numberOfRocksToDrop) {
+                var rock = GenerateNewRock(lastRock, highestRow);
+
                 while (true) {
                     if (jets.Current() == '<' && rock.CanMoveLeft(rocks)) {
                         rock.MoveLeft();
@@ -26,16 +38,50 @@
                     }
                 }
 
-                rocks = rocks.Append(rock);
+                rockCount++;
+                lastRock = rock;
+                highestRow = Math.Max(rock.HighestRow, highestRow);
+
+                if (rocks.Count() > 25) {
+                    rocks.RemoveAt(0);
+                }
+
+                rocks.Add(rock);
+
+                if (rockCount == 100) {
+                    snapshot = Snapshot(rocks);
+                    snapshotHighestRow = rocks.Max(x => x.HighestRow);
+                    snapshotRockCount = rockCount;
+                }
+                else if (rockCount > 100) {
+                    var currentSnapshot = Snapshot(rocks);
+
+                    if (snapshot == currentSnapshot) {
+                        var highestRowDelta = highestRow - snapshotHighestRow;
+                        var rockCountDelta = rockCount - snapshotRockCount;
+                        var highestRowBeforeJump = highestRow;
+                        var iterationsToJump = (numberOfRocksToDrop - rockCount) / rockCountDelta;
+
+                        rockCount += rockCountDelta * iterationsToJump;
+                        highestRow += highestRowDelta * iterationsToJump;
+
+                        while (rockCount <= numberOfRocksToDrop) {
+                            rockCount += rockCountDelta;
+                            highestRow += highestRowDelta;
+                        }
+
+                        rockCount -= rockCountDelta;
+                        highestRow -= highestRowDelta;
+                        rocks.ForEach(x => x.ShiftUp(highestRow - highestRowBeforeJump));
+                    }
+                }
             }
 
-            Console.WriteLine("Day 17, Star 1: {0}", rocks.Max(x => x.Points.Max(y => y.Row)) + 1);
-            Console.WriteLine("Day 17, Star 2: {0}", "¯\\_(ツ)_/¯");
+            return highestRow;
         }
 
-        private static Rock GenerateNewRock(IEnumerable<Rock> rocks) {
-            var highestRow = rocks.Any() ? rocks.Max(x => x.Points.Max(y => y.Row)) : -1;
-            var nextRockType = GetNextRockType(rocks.Any() ? rocks.Last().Type : null);
+        private static Rock GenerateNewRock(Rock? lastRock, long highestRow) {
+            var nextRockType = GetNextRockType(lastRock == default(Rock) ? null : lastRock.Type);
 
             return GenerateNewRock(highestRow, nextRockType);
         }
@@ -119,6 +165,28 @@
             }
             Console.Write(Environment.NewLine);
         }
+
+        private static string Snapshot(IEnumerable<Rock> rocks) {
+            var lines = new List<string>();
+            var points = rocks.SelectMany(x => x.Points).Distinct();
+
+            for (long row = points.Max(x => x.Row); row >= points.Min(x => x.Row); row--) {
+                var line = string.Empty;
+
+                for (int column = 0; column < 7; column++) {
+                    if (rocks.Any(x => x.Points.Any(y => y.Row == row && y.Column == column))) {
+                        line += "#";
+                    }
+                    else {
+                        line += ".";
+                    }
+                }
+
+                lines.Add(line + "\n");
+            }
+
+            return lines.Aggregate((a, b) => a + b);
+        }
     }
 
     public class Rock {
@@ -129,6 +197,13 @@
 
         public RockType Type { get; }
         public (long Row, int Column)[] Points { get; }
+        public long HighestRow => Points.Max(x => x.Row);
+
+        public void ShiftUp(long amountOfRows) {
+            for (long i = 0; i < Points.Length; i++) {
+                Points[i].Row += amountOfRows;
+            }
+        }
 
         public void MoveDown() {
             for (long i = 0; i < Points.Length; i++) {
@@ -200,19 +275,13 @@
     }
 
     public class CircularList<T> : List<T> {
-        private int Index;
-
-        public CircularList() : this(0) { }
-
-        public CircularList(IEnumerable<T> source) : this(0) {
+        public CircularList(IEnumerable<T> source) {
             foreach (var item in source) {
                 Add(item);
             }
         }
 
-        public CircularList(int index) {
-            Index = index;
-        }
+        public int Index { get; private set; }
 
         public T Current() {
             return this[Index];
@@ -223,24 +292,6 @@
             Index %= Count;
 
             return this[Index];
-        }
-
-        public T Previous() {
-            Index--;
-
-            if (Index < 0) {
-                Index = Count - 1;
-            }
-
-            return this[Index];
-        }
-
-        public void Reset() {
-            Index = 0;
-        }
-
-        public void MoveToEnd() {
-            Index = Count - 1;
         }
     }
 }
