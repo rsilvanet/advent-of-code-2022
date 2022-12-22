@@ -1,6 +1,4 @@
-﻿using System.Drawing;
-
-namespace AdventOfCode.Day22 {
+﻿namespace AdventOfCode.Day22 {
     public static class Day22 {
         public static void Go() {
             var input = File.ReadLines("Day22/Input.txt");
