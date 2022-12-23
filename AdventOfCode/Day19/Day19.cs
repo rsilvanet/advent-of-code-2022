@@ -1,4 +1,6 @@
-﻿namespace AdventOfCode.Day19 {
+﻿using System.Diagnostics;
+
+namespace AdventOfCode.Day19 {
     public static class Day19 {
         public static void Go() {
             var input = File.ReadLines("Day19/Input.txt");
@@ -18,16 +20,10 @@
                 { RockType.Geode, 0 }
             };
 
-            var bestResult = new RockDictionary() {
-                { RockType.Ore, 0 },
-                { RockType.Clay, 0 },
-                { RockType.Obsidian, 0 },
-                { RockType.Geode, 0 }
-            };
+            var tasks = new List<Task<(int blueprint, int bestResult)>>();
 
-            var tasks = new List<Task<(int blueprint, RockDictionary bestResult)>>();
-
-            Console.Write("Day 19, Processing: ");
+            var stopwatch = new Stopwatch();
+            stopwatch.Start();
 
             foreach (var blueprint in blueprints) {
                 var task = Task.Run(() => (blueprint.Id, Collect(
@@ -35,8 +31,8 @@
                     minutesLeft: 24,
                     robots,
                     minerals,
-                    bestResult,
-                    memo: new Dictionary<(Blueprint, int, RockDictionary, RockDictionary, RockDictionary), RockDictionary>()
+                    0,
+                    memo: new Dictionary<(Blueprint, int, RockDictionary, RockDictionary, int), int>()
                 )));
 
                 tasks.Add(task);
@@ -44,43 +40,44 @@
 
             var taskResults = Task.WhenAll(tasks).Result;
 
-            Console.Write(Environment.NewLine);
-            Console.WriteLine("Day 19, Star 1: {0}", taskResults.Sum(x => x.blueprint * x.bestResult[RockType.Geode]));
+            Console.WriteLine("Day 19, Elapsed: {0}ms", stopwatch.ElapsedMilliseconds);
+            Console.WriteLine("Day 19, Star 1: {0}", taskResults.Sum(x => x.blueprint * x.bestResult));
             Console.WriteLine("Day 19, Star 2: {0}", "¯\\_(\"/)_/¯");
         }
 
-        private static bool CanBuildRobot(Blueprint blueprint, RockDictionary robots, RockDictionary minerals, RockType robotType) {
-            var hasEnoughMaterialToBuild = true;
-            var hasEnoughRobotsCollecting = robotType != RockType.Geode;
-
-            foreach (var cost in blueprint.Costs.Where(x => x.Key.robotType == robotType)) {
-                if (minerals[cost.Key.resourceNeeded] < cost.Value) {
-                    hasEnoughMaterialToBuild = false;
-                }
+        private static bool ShouldBuildRobot(Blueprint blueprint, RockDictionary robots, RockDictionary minerals, RockType robotType) {
+            if (!blueprint.CanBuild(robotType, minerals)) {
+                return false;
             }
 
-            foreach (var cost in blueprint.Costs.Where(x => x.Key.resourceNeeded == robotType)) {
-                if (robots[robotType] < cost.Value) {
-                    hasEnoughRobotsCollecting = false;
-                }
+            if (robotType == RockType.Geode) {
+                return true;
             }
 
-            return hasEnoughMaterialToBuild && !hasEnoughRobotsCollecting;
+            return robots[robotType] < blueprint.GetMaxNeeded(robotType);
         }
 
-        private static RockDictionary Collect(
+        private static int Collect(
                 Blueprint blueprint,
                 int minutesLeft,
                 RockDictionary robots,
                 RockDictionary minerals,
-                RockDictionary bestResult,
-                Dictionary<(Blueprint, int, RockDictionary, RockDictionary, RockDictionary), RockDictionary> memo) {
+                int bestResult,
+                Dictionary<(Blueprint, int, RockDictionary, RockDictionary, int), int> memo) {
 
             if (minutesLeft == 0) {
-                if (minerals[RockType.Geode] > bestResult[RockType.Geode]) {
-                    return minerals;
-                }
+                return Math.Max(bestResult, minerals[RockType.Geode]);
+            }
 
+            if (minutesLeft < 17 && robots[RockType.Clay] == 0) {
+                return bestResult;
+            }
+
+            if (minutesLeft < 10 && robots[RockType.Obsidian] == 0) {
+                return bestResult;
+            }
+
+            if (minutesLeft < 2 && robots[RockType.Geode] == 0) {
                 return bestResult;
             }
 
@@ -90,22 +87,18 @@
                 return memoResult;
             }
 
-            var rockTypesEnabled = new[] { RockType.Geode, RockType.Obsidian, RockType.Clay, RockType.Ore };
+            var rockTypes = new[] { RockType.Geode, RockType.Obsidian, RockType.Clay, RockType.Ore };
 
-            foreach (var rockType in rockTypesEnabled) {
-                if (CanBuildRobot(blueprint, robots, minerals, rockType)) {
+            foreach (var rockType in rockTypes) {
+                if (ShouldBuildRobot(blueprint, robots, minerals, rockType)) {
                     var robotsPlusNew = new RockDictionary(robots);
                     var mineralsMinusSpent = new RockDictionary(minerals);
 
                     robotsPlusNew[rockType]++;
-
-                    foreach (var cost in blueprint.Costs.Where(x => x.Key.robotType == rockType)) {
-                        mineralsMinusSpent[cost.Key.resourceNeeded] -= cost.Value;
-                    }
-
-                    foreach (var item in rockTypesEnabled) {
-                        mineralsMinusSpent[item] += robots[item];
-                    }
+                    mineralsMinusSpent[RockType.Ore] += robots[RockType.Ore] - blueprint.Costs[(rockType, RockType.Ore)];
+                    mineralsMinusSpent[RockType.Clay] += robots[RockType.Clay] - blueprint.Costs[(rockType, RockType.Clay)];
+                    mineralsMinusSpent[RockType.Obsidian] += robots[RockType.Obsidian] - blueprint.Costs[(rockType, RockType.Obsidian)];
+                    mineralsMinusSpent[RockType.Geode] += robots[RockType.Geode];
 
                     bestResult = Collect(
                         blueprint,
@@ -123,10 +116,10 @@
             }
 
             var mineralsPlusNew = new RockDictionary(minerals);
-
-            foreach (var rockType in rockTypesEnabled) {
-                mineralsPlusNew[rockType] += robots[rockType];
-            }
+            mineralsPlusNew[RockType.Ore] += robots[RockType.Ore];
+            mineralsPlusNew[RockType.Clay] += robots[RockType.Clay];
+            mineralsPlusNew[RockType.Obsidian] += robots[RockType.Obsidian];
+            mineralsPlusNew[RockType.Geode] += robots[RockType.Geode];
 
             bestResult = Collect(
                 blueprint,
@@ -138,10 +131,6 @@
             );
 
             memo.Add(memoKey, bestResult);
-
-            if (minutesLeft == 24) {
-                Console.Write($"{blueprint.Id} ");
-            }
 
             return bestResult;
         }
@@ -179,6 +168,16 @@
 
         public int Id { get; set; }
         public Dictionary<(RockType robotType, RockType resourceNeeded), int> Costs { get; set; }
+
+        public int GetMaxNeeded(RockType rockType) => Costs.Where(x => x.Key.resourceNeeded == rockType).Max(x => x.Value);
+
+        public bool CanBuild(RockType robotType, RockDictionary minerals) => robotType switch {
+            RockType.Ore => minerals[RockType.Ore] >= Costs[(RockType.Ore, RockType.Ore)],
+            RockType.Clay => minerals[RockType.Ore] >= Costs[(RockType.Clay, RockType.Ore)],
+            RockType.Obsidian => minerals[RockType.Ore] >= Costs[(RockType.Obsidian, RockType.Ore)] && minerals[RockType.Clay] >= Costs[(RockType.Obsidian, RockType.Clay)],
+            RockType.Geode => minerals[RockType.Ore] >= Costs[(RockType.Geode, RockType.Ore)] && minerals[RockType.Obsidian] >= Costs[(RockType.Geode, RockType.Obsidian)],
+            _ => throw new NotImplementedException()
+        };
     }
 
     public class RockDictionary : Dictionary<RockType, int>, IEquatable<RockDictionary?> {
