@@ -1,4 +1,6 @@
-﻿namespace AdventOfCode.Day16 {
+﻿using System.Diagnostics;
+
+namespace AdventOfCode.Day16 {
     public static class Day16 {
         private static readonly Dictionary<string, int> flowRates = new Dictionary<string, int>();
         private static readonly Dictionary<string, string[]> nextValves = new Dictionary<string, string[]>();
@@ -14,15 +16,19 @@
                 nextValves.Add(valve, split.Skip(2).Select(x => x.Trim()).ToArray());
             }
 
+            var stopwatch = new Stopwatch();
+            stopwatch.Start();
+
             var bestScore = ExplorePaths(
                 valve: "AA",
                 minutesLeft: 30,
-                openedValves: Array.Empty<string>(),
+                openedValves: new List<string>(),
                 currentScore: 0,
                 bestScore: 0,
-                memo: new Dictionary<(string, int, IEnumerable<string>, int, int), int>()
+                memo: new Dictionary<(string, int, List<string>, int, int), int>()
             );
-            
+
+            Console.WriteLine("Day 16, Elapsed: {0}ms", stopwatch.ElapsedMilliseconds);
             Console.WriteLine("Day 16, Star 1: {0}", bestScore);
             Console.WriteLine("Day 16, Star 2: {0}", "¯\\_(ツ)_/¯");
         }
@@ -30,12 +36,12 @@
         private static int ExplorePaths(
                 string valve,
                 int minutesLeft,
-                IEnumerable<string> openedValves,
+                List<string> openedValves,
                 int currentScore,
                 int bestScore,
-                Dictionary<(string, int, IEnumerable<string>, int, int), int> memo) {
+                Dictionary<(string, int, List<string>, int, int), int> memo) {
 
-            if (minutesLeft <= 2) {
+            if (minutesLeft == 0) {
                 return Math.Max(bestScore, currentScore);
             }
 
@@ -46,14 +52,18 @@
             }
 
             if (flowRates[valve] > 0 && !openedValves.Contains(valve)) {
+                openedValves.Add(valve);
+
                 bestScore = ExplorePaths(
                     valve,
                     minutesLeft - 1,
-                    openedValves.Append(valve).ToArray(),
+                    openedValves,
                     currentScore: currentScore + (flowRates[valve] * (minutesLeft - 1)),
                     bestScore,
                     memo
                 );
+
+                openedValves.Remove(valve);
             }
 
             foreach (var nextValve in nextValves[valve]) {

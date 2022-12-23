@@ -1,3 +1,3 @@
-﻿using AdventOfCode.Day19;
+﻿using AdventOfCode.Day16;
 
-Day19.Go();
+Day16.Go();
