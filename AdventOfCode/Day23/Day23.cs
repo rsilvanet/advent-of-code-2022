@@ -1,7 +1,7 @@
 ﻿namespace AdventOfCode.Day23 {
     public static class Day23 {
         public static void Go() {
-            var input = File.ReadLines("Day23/Input.txt");
+            var input = File.ReadLines("Day23/Sample.txt");
             var map = ReadMap(input);
             var directions = new List<char>() { 'N', 'S', 'W', 'E' };
 
@@ -88,7 +88,7 @@
 
             directionOrder.Add(directionOrder.First());
             directionOrder.RemoveAt(0);
-            
+
             return true;
         }
 
@@ -98,17 +98,10 @@
             var columnMin = map.Where(x => x.Value == '#').Min(x => x.Key.column);
             var columnMax = map.Where(x => x.Value == '#').Max(x => x.Key.column);
 
-            var counter = 0;
-
-            for (int row = rowMin; row <= rowMax; row++) {
-                for (int column = columnMin; column <= columnMax; column++) {
-                    if (map[(row, column)] == '.') {
-                        counter++;
-                    }
-                }
-            }
-
-            return counter;
+            return map.Where(x => x.Key.row >= rowMin && x.Key.row <= rowMax)
+                .Where(x => x.Key.column >= columnMin && x.Key.column <= columnMax)
+                .Where(x => x.Value == '.')
+                .Count();
         }
 
         private static IDictionary<(int row, int column), char> ReadMap(IEnumerable<string> mapLines) {
